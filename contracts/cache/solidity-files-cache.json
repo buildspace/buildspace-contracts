@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/davidbarrick/code/buildspace-contracts/contracts/contracts/Buildspace.sol": {
-      "lastModificationDate": 1631754263389,
-      "contentHash": "f77b931b5ab8ff9ee483895e7e05c802",
+      "lastModificationDate": 1631805265638,
+      "contentHash": "637de0b70ce78572d6c1e511ac57ac39",
       "sourceName": "contracts/Buildspace.sol",
       "solcConfig": {
         "version": "0.8.0",
@@ -30,7 +30,8 @@
       "imports": [
         "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
         "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol",
-        "@openzeppelin/contracts/utils/Counters.sol"
+        "@openzeppelin/contracts/utils/Counters.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
       ],
       "versionPragmas": [
         "^0.8.0"
@@ -461,6 +462,42 @@
       ],
       "artifacts": [
         "IERC165"
+      ]
+    },
+    "/Users/davidbarrick/code/buildspace-contracts/contracts/node_modules/@openzeppelin/contracts/access/Ownable.sol": {
+      "lastModificationDate": 1631729835820,
+      "contentHash": "4fe56b59ced59d87df6b796758f62895",
+      "sourceName": "@openzeppelin/contracts/access/Ownable.sol",
+      "solcConfig": {
+        "version": "0.8.0",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "Ownable"
       ]
     }
   }

@@ -5,20 +5,24 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Buildspace is ERC721URIStorage {
+contract Buildspace is ERC721URIStorage, Ownable {
     mapping(address => mapping(string => bool)) public claimed;
-    mapping(string => uint256) public cohortLimits;
-    mapping(string => uint256) public cohortTokensMinted;
-    mapping(string => bytes32) private merkleRoot;
     mapping(address => bool) private admins;
+    mapping(string => Cohort) public cohorts;
 
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdTracker;
 
-    address owner;
     string contractBaseURI;
     bool allowsTransfers = false;
+
+    struct Cohort {
+        uint128 limit;
+        uint128 tokenMinted;
+        bytes32 merkleRoot;
+    }
 
     event Claim(
         address indexed _receiver,
@@ -31,7 +35,6 @@ contract Buildspace is ERC721URIStorage {
     constructor(string memory _contractBaseURI)
         ERC721("buildspace", "BUILDSPACE")
     {
-        owner = msg.sender;
         admins[msg.sender] = true;
         contractBaseURI = _contractBaseURI;
     }
@@ -43,19 +46,7 @@ contract Buildspace is ERC721URIStorage {
 
     modifier limitCheck(string memory _cohortId, address to) {
         require(
-            cohortTokensMinted[_cohortId] < cohortLimits[_cohortId],
-            "Buildspace: max tokens issued for cohort"
-        );
-        require(
-            !claimed[to][_cohortId],
-            "Buildspace: address has already claimed token."
-        );
-        _;
-    }
-
-    modifier user(string memory _cohortId, address to) {
-        require(
-            cohortTokensMinted[_cohortId] < cohortLimits[_cohortId],
+            cohorts[_cohortId].tokenMinted < cohorts[_cohortId].limit,
             "Buildspace: max tokens issued for cohort"
         );
         require(
@@ -73,8 +64,8 @@ contract Buildspace is ERC721URIStorage {
         string memory _cohortId,
         address to,
         bool _isAdmin
-    ) internal returns (uint256) {
-        uint256 nextCohortTokenIndex = cohortTokensMinted[_cohortId];
+    ) internal limitCheck(_cohortId, to) returns (uint256) {
+        uint128 nextCohortTokenIndex = cohorts[_cohortId].tokenMinted;
         string memory _uri = string(
             abi.encodePacked(
                 _cohortId,
@@ -84,14 +75,14 @@ contract Buildspace is ERC721URIStorage {
             )
         );
 
+        claimed[to][_cohortId] = true;
         uint256 newTokenId = _tokenIdTracker.current();
         _safeMint(to, newTokenId);
-        claimed[to][_cohortId] = true;
         emit Claim(to, _cohortId, nextCohortTokenIndex, newTokenId, _isAdmin);
 
         _setTokenURI(newTokenId, _uri);
 
-        cohortTokensMinted[_cohortId] = nextCohortTokenIndex + 1;
+        cohorts[_cohortId].tokenMinted = nextCohortTokenIndex + 1;
         _tokenIdTracker.increment();
 
         return newTokenId;
@@ -121,7 +112,6 @@ contract Buildspace is ERC721URIStorage {
     function adminClaimToken(string memory _cohortId, address to)
         external
         onlyAdmin
-        limitCheck(_cohortId, to)
         returns (uint256)
     {
         return issueToken(_cohortId, to, true);
@@ -129,12 +119,11 @@ contract Buildspace is ERC721URIStorage {
 
     function claimToken(string memory _cohortId, bytes32[] memory _proof)
         external
-        limitCheck(_cohortId, msg.sender)
         returns (uint256)
     {
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
         require(
-            MerkleProof.verify(_proof, merkleRoot[_cohortId], leaf),
+            MerkleProof.verify(_proof, cohorts[_cohortId].merkleRoot, leaf),
             "Buildspace: address not eligible for claim"
         );
 
@@ -145,40 +134,57 @@ contract Buildspace is ERC721URIStorage {
         allowsTransfers = _allowsTransfers;
     }
 
-    function createCohort(string memory _cohortId, uint256 _limit)
-        external
-        onlyAdmin
-    {
-        cohortLimits[_cohortId] = _limit;
-        cohortTokensMinted[_cohortId] = 0;
+    function createCohort(
+        string memory _cohortId,
+        uint128 _limit,
+        bytes32 _merkleRoot
+    ) external onlyAdmin {
+        require(
+            cohorts[_cohortId].limit == 0,
+            "Buildspace: Cohort already exists"
+        );
+        require(_limit > 0, "Buildspace: Limit must be greater than 0");
+        Cohort memory cohort = Cohort(_limit, 0, _merkleRoot);
+        cohorts[_cohortId] = cohort;
     }
 
     function setMerkleRoot(string memory _cohortId, bytes32 _merkleRoot)
         external
         onlyAdmin
     {
-        require(cohortLimits[_cohortId] > 0, "No cohort limit set");
-        merkleRoot[_cohortId] = _merkleRoot;
+        require(
+            cohorts[_cohortId].limit > 0,
+            "Buildspace: No cohort limit set"
+        );
+        cohorts[_cohortId].merkleRoot = _merkleRoot;
     }
 
     function limitForCohort(string memory _cohortId)
         public
         view
-        returns (uint256)
+        returns (uint128)
     {
-        return cohortLimits[_cohortId];
+        return cohorts[_cohortId].limit;
     }
 
     function tokensClaimedForCohort(string memory _cohortId)
         public
         view
-        returns (uint256)
+        returns (uint128)
     {
-        return cohortTokensMinted[_cohortId];
+        return cohorts[_cohortId].tokenMinted;
     }
 
-    function updateAdmin(address _admin, bool isAdmin) external {
-        require(msg.sender == owner, "Only contract owner can update admins");
+    function merkleRootForCohort(string memory _cohortId)
+        public
+        view
+        onlyAdmin
+        returns (bytes32)
+    {
+        return cohorts[_cohortId].merkleRoot;
+    }
+
+    function updateAdmin(address _admin, bool isAdmin) external onlyOwner {
         admins[_admin] = isAdmin;
     }
 
@@ -188,7 +194,7 @@ contract Buildspace is ERC721URIStorage {
         uint256 tokenId
     ) internal virtual override {
         require(
-            _exists(tokenId) == false || allowsTransfers == true,
+            from == address(0) || to == address(0) || allowsTransfers,
             "Not allowed to transfer"
         );
         return super._beforeTokenTransfer(from, to, tokenId);
