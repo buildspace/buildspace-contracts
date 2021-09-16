@@ -1,7 +1,7 @@
 require('@nomiclabs/hardhat-waffle');
 require('@nomiclabs/hardhat-etherscan');
 
-const { RINKEBY_URL, RINKEBY_ACCOUNT, ETHERSCAN_API_KEY } = require('./.auth.rinkeby.js');
+const config = require('./.auth.config.js');
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
@@ -20,16 +20,10 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
  */
 module.exports = {
   solidity: '0.8.0',
-  networks: {
-    rinkeby: {
-      url: RINKEBY_URL,
-      accounts: [RINKEBY_ACCOUNT],
-    },
-  },
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: ETHERSCAN_API_KEY,
+    apiKey: config.MAINNET.ETHERSCAN_API_KEY,
   },
 };
 
