@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/davidbarrick/code/buildspace-contracts/contracts/contracts/Buildspace.sol": {
-      "lastModificationDate": 1631805265638,
-      "contentHash": "637de0b70ce78572d6c1e511ac57ac39",
+      "lastModificationDate": 1631832118581,
+      "contentHash": "d8e0d184de539f1141fe182a4a042b3e",
       "sourceName": "contracts/Buildspace.sol",
       "solcConfig": {
         "version": "0.8.0",

@@ -20,12 +20,15 @@ task('accounts', 'Prints the list of accounts', async (taskArgs, hre) => {
  */
 module.exports = {
   solidity: '0.8.0',
+  networks: {
+    rinkeby: {
+      url: config.RINKEBY.NODE_URL,
+    },
+    mainnet: {
+      url: config.MAINNET.NODE_URL,
+    },
+  },
   etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
     apiKey: config.MAINNET.ETHERSCAN_API_KEY,
   },
 };
-
-//0x83F40A2F0bb814FC03D5B6C6B8166CfBe6794c35
-//https://staging.tokens.buildspace.so/assets/

@@ -27,7 +27,7 @@ contract Buildspace is ERC721URIStorage, Ownable {
     event Claim(
         address indexed _receiver,
         string indexed _cohortId,
-        uint256 _cohortIndex,
+        uint128 _cohortIndex,
         uint256 _contractIndex,
         bool _isAdmin
     );
@@ -88,18 +88,18 @@ contract Buildspace is ERC721URIStorage, Ownable {
         return newTokenId;
     }
 
-    function uint2str(uint256 _i) internal pure returns (string memory str) {
+    function uint2str(uint128 _i) internal pure returns (string memory str) {
         if (_i == 0) return "0";
 
-        uint256 j = _i;
-        uint256 length;
+        uint128 j = _i;
+        uint128 length;
         while (j != 0) {
             length++;
             j /= 10;
         }
 
         bytes memory bstr = new bytes(length);
-        uint256 k = length;
+        uint128 k = length;
         j = _i;
         while (j != 0) {
             bstr[--k] = bytes1(uint8(48 + (j % 10)));
@@ -157,31 +157,6 @@ contract Buildspace is ERC721URIStorage, Ownable {
             "Buildspace: No cohort limit set"
         );
         cohorts[_cohortId].merkleRoot = _merkleRoot;
-    }
-
-    function limitForCohort(string memory _cohortId)
-        public
-        view
-        returns (uint128)
-    {
-        return cohorts[_cohortId].limit;
-    }
-
-    function tokensClaimedForCohort(string memory _cohortId)
-        public
-        view
-        returns (uint128)
-    {
-        return cohorts[_cohortId].tokenMinted;
-    }
-
-    function merkleRootForCohort(string memory _cohortId)
-        public
-        view
-        onlyAdmin
-        returns (bytes32)
-    {
-        return cohorts[_cohortId].merkleRoot;
     }
 
     function updateAdmin(address _admin, bool isAdmin) external onlyOwner {
