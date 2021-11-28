@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Buildspace is ERC721URIStorage, Ownable {
-    mapping(address => mapping(string => bool)) public claimed;
+    mapping(address => mapping(string => uint256)) public claimed;
     mapping(address => bool) private admins;
     mapping(string => Cohort) public cohorts;
 
@@ -50,8 +50,21 @@ contract Buildspace is ERC721URIStorage, Ownable {
             "Buildspace: max tokens issued for cohort"
         );
         require(
-            !claimed[to][_cohortId],
+            claimed[to][_cohortId] == 0,
             "Buildspace: address has already claimed token."
+        );
+        _;
+    }
+
+    modifier merkleCheck(
+        string memory _cohortId,
+        bytes32[] memory _proof,
+        address to
+    ) {
+        bytes32 leaf = keccak256(abi.encodePacked(to));
+        require(
+            MerkleProof.verify(_proof, cohorts[_cohortId].merkleRoot, leaf),
+            "Buildspace: address not eligible for claim"
         );
         _;
     }
@@ -75,8 +88,9 @@ contract Buildspace is ERC721URIStorage, Ownable {
             )
         );
 
-        claimed[to][_cohortId] = true;
         uint256 newTokenId = _tokenIdTracker.current();
+        claimed[to][_cohortId] = newTokenId;
+
         _safeMint(to, newTokenId);
         emit Claim(to, _cohortId, nextCohortTokenIndex, newTokenId, _isAdmin);
 
@@ -109,16 +123,17 @@ contract Buildspace is ERC721URIStorage, Ownable {
         return str;
     }
 
-    function adminClaimToken(string memory _cohortId, address to)
-        external
-        onlyAdmin
-        returns (uint256)
-    {
+    function adminClaimToken(
+        string memory _cohortId,
+        bytes32[] memory _proof,
+        address to
+    ) external onlyAdmin merkleCheck(_cohortId, _proof, to) returns (uint256) {
         return issueToken(_cohortId, to, true);
     }
 
     function claimToken(string memory _cohortId, bytes32[] memory _proof)
         external
+        merkleCheck(_cohortId, _proof, msg.sender)
         returns (uint256)
     {
         bytes32 leaf = keccak256(abi.encodePacked(msg.sender));

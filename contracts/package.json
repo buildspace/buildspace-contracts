@@ -1,5 +1,5 @@
 {
-  "name": "hardhat-project",
+  "name": "buildspace-contracts",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^2.1.6",
@@ -11,8 +11,6 @@
     "hardhat-gas-reporter": "^1.0.4"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.3.2",
-    "@walletconnect/web3-provider": "^1.6.5",
-    "qrcode": "^1.4.4"
+    "@openzeppelin/contracts": "^4.3.2"
   }
 }
