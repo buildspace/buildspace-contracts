@@ -27,6 +27,11 @@ async function createCohort(cohortId, limit, merkleRoot) {
   await tx.wait();
 }
 
+async function fetchCohort(cohortId, limit, merkleRoot) {
+  const tx = await contract.cohorts(cohortId);
+  console.log(tx);
+}
+
 async function fetchUri(tokenId) {
   const tx = await contract.tokenURI(tokenId);
   console.log(tx);
@@ -53,7 +58,13 @@ async function createCohort(cohort_id, limit) {
   await tx.wait();
 }
 
-fetchUri('0')
+async function fetchOwner(address) {
+  const tx = await contract.claimed(address, 'CHbdfb992f-80ca-44a4-b7f7-54bb0365ff50');
+  console.log(tx);
+  return tx;
+}
+
+fetchUri('5579')
   .then(() => process.exit(0))
   .catch(error => {
     console.error(error);
