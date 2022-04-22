@@ -27,3 +27,4 @@ yarn-error.log*
 /contracts/artifacts*
 /contracts/cache*
 /contracts/.auth.config.js
+.gitignore
