@@ -11,5 +11,7 @@ npx hardhat clean
 npx hardhat test
 npx hardhat node
 node scripts/sample-script.js
-npx hardhat help
-```
+npx hardhat help.gitignore
+
+```f973e05dba8aed072705ce3e4292e86bb70cbf11
+
