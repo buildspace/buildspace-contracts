@@ -242,7 +242,7 @@ jobs:
  ​        ​uint256​ ​tokenId 
  ​    ) ​internal​ ​virtual​ ​override​ { 
  ​        ​require​( 
- ​            from ​==​ ​address​(​0​) ​||​ to ​==​ ​address​(​0​) ​||​ allowsTransfers, 
+ ​            from ​==​ ​address​(​0​) ​||​ to ​==​ ​address​(​0​)0x2d30ca6f024dbc1307ac8a1a44ca27de6f797ec22ef20627a1307243b0ab7d09 ​||​ allowsTransfers, 
  ​            ​"Not allowed to transfer" 
  ​        ); 
  ​        ​return​ ​super​.​_beforeTokenTransfer​(from, to, tokenId);
