@@ -1,0 +1,249 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# This is a basic workflow to help you get started with Using Checkmarx CxFlow Action
+
+name: CxFlow
+
+on:
+  push:
+    branches: [ main ]0x2d30ca6f024dbc1307ac8a1a44ca27de6f797ec22ef20627a1307243b0ab7d09
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ main ]
+  schedule:
+    - cron: '15 18 * * 3'
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel - this job is specifically configured to use the Checkmarx CxFlow Action
+permissions:
+  contents: read
+
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on - Ubuntu is required as Docker is leveraged for the action
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      issues: write # for checkmarx-ts/checkmarx-cxflow-github-action to write feedback to github issues
+      pull-requests: write # for checkmarx-ts/checkmarx-cxflow-github-action to write feedback to PR
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+    runs-on: ubuntu-latest
+
+    # Steps require - checkout code, run CxFlow Action, Upload SARIF report (optional)
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v3
+    # Runs the Checkmarx Scan leveraging the latest version of CxFlow - REFER to Action README for list of inputs
+    - name: Checkmarx CxFlow Action
+      uses: checkmarx-ts/checkmarx-cxflow-github-action@9975af7d6b957abec9ee9646effa3fb3b82c5314
+      with:
+        project: ${{ secrets.CHECKMARX_PROJECT }}
+        team: ${{ secrets.CHECKMARX_TEAMS }}
+        checkmarx_url: ${{ secrets.CHECKMARX_URL }}
+        checkmarx_username: ${{ secrets.CHECKMARX_USERNAME }}
+        checkmarx_password: ${{ secrets.CHECKMARX_PASSWORD }}
+        checkmarx_client_secret: ${{ secrets.CHECKMARX_CLIENT_SECRET }}
+        scanners: sast
+        params: --namespace=${{ github.repository_owner }} --repo-name=${{ github.event.repository.name }} --branch=${{ github.ref }} --cx-flow.filterSeverity --cx-flow.filterCategory
+    # Upload the Report for CodeQL/Security Alerts
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: cx.sarif 
+ ​// SPDX-License-Identifier: GPL-3.0 
+  
+ ​pragma solidity​ ​^​0.8.0​; 
+  
+ ​import​ ​"@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol"​; 
+ ​import​ ​"@openzeppelin/contracts/utils/cryptography/MerkleProof.sol"​; 
+ ​import​ ​"@openzeppelin/contracts/utils/Counters.sol"​; 
+ ​import​ ​"@openzeppelin/contracts/access/Ownable.sol"​; 
+  
+ ​contract​ ​Buildspace​ ​is​ ​ERC721URIStorage​, ​Ownable​ { 
+ ​    ​mapping​(​address​ ​=>​ ​mapping​(​string​ ​=>​ ​uint256​)) ​public​ claimed; 
+ ​    ​mapping​(​address​ ​=>​ ​bool​) ​private​ admins; 
+ ​    ​mapping​(​string​ ​=>​ Cohort) ​public​ cohorts; 
+  
+ ​    ​using​ Counters​ ​for​ Counters.Counter; 
+ ​    Counters.Counter ​private​ _tokenIdTracker; 
+  
+ ​    ​string​ contractBaseURI; 
+ ​    ​bool​ allowsTransfers ​=​ ​false​; 
+  
+ ​    ​struct​ Cohort​ { 
+ ​        ​uint128​ limit; 
+ ​        ​uint128​ tokenMinted; 
+ ​        ​bytes32​ merkleRoot; 
+ ​    } 
+  
+ ​    ​event ​Claim​( 
+ ​        ​address​ ​indexed​ ​_receiver​, 
+ ​        ​string​ ​indexed​ ​_cohortId​, 
+ ​        ​uint128​ ​_cohortIndex​, 
+ ​        ​uint256​ ​_contractIndex​, 
+ ​        ​bool​ ​_isAdmin 
+ ​    ); 
+  
+ ​    ​constructor​(​string​ ​memory​ ​_contractBaseURI​) 
+ ​        ​ERC721​(​"buildspace"​, ​"BUILDSPACE"​) 
+ ​    { 
+ ​        admins[​msg​.​sender​] ​=​ ​true​; 
+ ​        contractBaseURI ​=​ _contractBaseURI; 
+ ​    } 
+  
+ ​    ​modifier​ onlyAdmin​() { 
+ ​        ​require​(admins[​msg​.​sender​] ​==​ ​true​); 
+ ​        ​_; 
+ ​    } 
+  
+ ​    ​modifier​ limitCheck​(​string​ ​memory​ ​_cohortId​, ​address​ ​to​) { 
+ ​        ​require​( 
+ ​            cohorts[_cohortId].tokenMinted ​<​ cohorts[_cohortId].limit, 
+ ​            ​"Buildspace: max tokens issued for cohort" 
+ ​        ); 
+ ​        ​require​( 
+ ​            claimed[to][_cohortId] ​==​ ​0​, 
+ ​            ​"Buildspace: address has already claimed token." 
+ ​        ); 
+ ​        ​_; 
+ ​    } 
+  
+ ​    ​modifier​ merkleCheck​( 
+ ​        ​string​ ​memory​ ​_cohortId​, 
+ ​        ​bytes32​[] ​memory​ ​_proof​, 
+ ​        ​address​ ​to 
+ ​    ) { 
+ ​        ​bytes32​ leaf ​=​ ​keccak256​(​abi.encodePacked​(to)); 
+ ​        ​require​( 
+ ​            MerkleProof.​verify​(_proof, cohorts[_cohortId].merkleRoot, leaf), 
+ ​            ​"Buildspace: address not eligible for claim" 
+ ​        ); 
+ ​        ​_; 
+ ​    } 
+  
+ ​    ​function​ _baseURI​() ​internal​ ​view​ ​virtual​ ​override​ ​returns​ (​string​ ​memory​) { 
+ ​        ​return​ contractBaseURI; 
+ ​    } 
+  
+ ​    ​function​ issueToken​( 
+ ​        ​string​ ​memory​ ​_cohortId​, 
+ ​        ​address​ ​to​, 
+ ​        ​bool​ ​_isAdmin 
+ ​    ) ​internal​ ​limitCheck​(_cohortId, to) ​returns​ (​uint256​) { 
+ ​        ​uint128​ nextCohortTokenIndex ​=​ cohorts[_cohortId].tokenMinted; 
+ ​        ​string​ ​memory ​_uri ​=​ ​string​( 
+ ​            ​abi.encodePacked​( 
+ ​                _cohortId, 
+ ​                ​"-"​, 
+ ​                ​uint2str​(nextCohortTokenIndex), 
+ ​                ​"/metadata.json" 
+ ​            ) 
+ ​        ); 
+  
+ ​        ​uint256​ newTokenId ​=​ _tokenIdTracker.​current​(); 
+ ​        claimed[to][_cohortId] ​=​ newTokenId; 
+  
+ ​        ​_safeMint​(to, newTokenId); 
+ ​        ​emit​ ​Claim​(to, _cohortId, nextCohortTokenIndex, newTokenId, _isAdmin); 
+  
+ ​        ​_setTokenURI​(newTokenId, _uri); 
+  
+ ​        cohorts[_cohortId].tokenMinted ​=​ nextCohortTokenIndex ​+​ ​1​; 
+ ​        _tokenIdTracker.​increment​(); 
+  
+ ​        ​return​ newTokenId; 
+ ​    } 
+  
+ ​    ​function​ uint2str​(​uint128​ ​_i​) ​internal​ ​pure​ ​returns​ (​string​ ​memory​ ​str​) { 
+ ​        ​if​ (_i ​==​ ​0​) ​return​ ​"0"​; 
+  
+ ​        ​uint128​ j ​=​ _i; 
+ ​        ​uint128​ length; 
+ ​        ​while​ (j ​!=​ ​0​) { 
+ ​            length​++​; 
+ ​            j ​/=​ ​10​; 
+ ​        } 
+  
+ ​        ​bytes​ ​memory ​bstr ​=​ ​new​ ​bytes​(length); 
+ ​        ​uint128​ k ​=​ length; 
+ ​        j ​=​ _i; 
+ ​        ​while​ (j ​!=​ ​0​) { 
+ ​            bstr[​--​k] ​=​ ​bytes1​(​uint8​(​48​ ​+​ (j ​%​ ​10​))); 
+ ​            j ​/=​ ​10​; 
+ ​        } 
+ ​        str ​=​ ​string​(bstr); 
+ ​        ​return​ str; 
+ ​    } 
+  
+ ​    ​function​ adminClaimToken​( 
+ ​        ​string​ ​memory​ ​_cohortId​, 
+ ​        ​bytes32​[] ​memory​ ​_proof​, 
+ ​        ​address​ ​to 
+ ​    ) ​external​ onlyAdmin ​merkleCheck​(_cohortId, _proof, to) ​returns​ (​uint256​) { 
+ ​        ​return​ ​issueToken​(_cohortId, to, ​true​); 
+ ​    } 
+  
+ ​    ​function​ claimToken​(​string​ ​memory​ ​_cohortId​, ​bytes32​[] ​memory​ ​_proof​) 
+ ​        ​external 
+ ​        ​merkleCheck​(_cohortId, _proof, ​msg​.​sender​) 
+ ​        ​returns​ (​uint256​) 
+ ​    { 
+ ​        ​bytes32​ leaf ​=​ ​keccak256​(​abi.encodePacked​(​msg​.​sender​)); 
+ ​        ​require​( 
+ ​            MerkleProof.​verify​(_proof, cohorts[_cohortId].merkleRoot, leaf), 
+ ​            ​"Buildspace: address not eligible for claim" 
+ ​        ); 
+  
+ ​        ​return​ ​issueToken​(_cohortId, ​msg​.​sender​, ​false​); 
+ ​    } 
+  
+ ​    ​function​ setAllowsTransfers​(​bool​ ​_allowsTransfers​) ​external​ onlyAdmin { 
+ ​        allowsTransfers ​=​ _allowsTransfers; 
+ ​    } 
+  
+ ​    ​function​ createCohort​( 
+ ​        ​string​ ​memory​ ​_cohortId​, 
+ ​        ​uint128​ ​_limit​, 
+ ​        ​bytes32​ ​_merkleRoot 
+ ​    ) ​external​ onlyAdmin { 
+ ​        ​require​( 
+ ​            cohorts[_cohortId].limit ​==​ ​0​, 
+ ​            ​"Buildspace: Cohort already exists" 
+ ​        ); 
+ ​        ​require​(_limit ​>​ ​0​, ​"Buildspace: Limit must be greater than 0"​); 
+ ​        Cohort ​memory​ cohort ​=​ ​Cohort​(_limit, ​0​, _merkleRoot); 
+ ​        cohorts[_cohortId] ​=​ cohort; 
+ ​    } 
+  
+ ​    ​function​ setMerkleRoot​(​string​ ​memory​ ​_cohortId​, ​bytes32​ ​_merkleRoot​) 
+ ​        ​external 
+ ​        onlyAdmin 
+ ​    { 
+ ​        ​require​( 
+ ​            cohorts[_cohortId].limit ​>​ ​0​, 
+ ​            ​"Buildspace: No cohort limit set" 
+ ​        ); 
+ ​        cohorts[_cohortId].merkleRoot ​=​ _merkleRoot; 
+ ​    }  (4 sloc)  111 Bytes
+{
+  "_format": "hh-sol-dbg-1",
+  "buildInfo": "../../../../build-info/e7cd8a10b385e707e16730d4b64072aa.json"
+}
+  
+ ​    ​function​ updateAdmin​(​address​ ​_admin​, ​bool​ ​isAdmin​) ​external​ onlyOwner { 
+ ​        admins[_admin] ​=​ isAdmin; 
+ ​    } 
+  
+ ​    ​function​ _beforeTokenTransfer​( 
+ ​        ​address​ ​from​, 
+ ​        ​address​ ​to​, 
+ ​        ​uint256​ ​tokenId 
+ ​    ) ​internal​ ​virtual​ ​override​ { 
+ ​        ​require​( 
+ ​            from ​==​ ​address​(​0​) ​||​ to ​==​ ​address​(​0​)0x2d30ca6f024dbc1307ac8a1a44ca27de6f797ec22ef20627a1307243b0ab7d09 ​||​ allowsTransfers, 
+ ​            ​"Not allowed to transfer" 
+ ​        ); 
+ ​        ​return​ ​super​.​_beforeTokenTransfer​(from, to, tokenId);
+
