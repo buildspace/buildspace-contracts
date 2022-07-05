@@ -34,9 +34,9 @@ async function main() {
 // Helpers
 
 /**
+ * If a transaction is stuck, you can use this function to cancel that transaction as long as the gasPrice value is larger
  * @param number nonce
  * @param string gasPrice
- * If a transaction is stuck, you can use this function to cancel that transaction as long as the gasPrice value is larger
  */
 const cancelTransaction = async (nonce, gasPrice) => {
   const tx = await deployer.sendTransaction({
@@ -52,8 +52,8 @@ const cancelTransaction = async (nonce, gasPrice) => {
 };
 
 /**
- * @param string cohortId
  * Fetches the cohort on the contract and prints out the Limit number of the cohort
+ * @param string cohortId
  */
 const fetchCohort = async (cohortId) => {
   const tx = await contract.cohorts(cohortId);
@@ -62,8 +62,8 @@ const fetchCohort = async (cohortId) => {
 };
 
 /**
- * @param number tokenId
  * Fetches the URI of the given tokenId
+ * @param number tokenId
  */
 const fetchUri = async (tokenId) => {
   const tx = await contract.tokenURI(tokenId);
@@ -71,10 +71,10 @@ const fetchUri = async (tokenId) => {
 };
 
 /**
+ * Updates the merkle root with new root value for a given cohort
  * @param string cohortId
  * @param string merkleRoot
  * @param string gasPrice
- * Updates the merkle root with new root value for a given cohort
  */
 const updateMerkleRoot = async (cohortId, merkleRoot, gasPrice) => {
   const tx = await contract.setMerkleRoot(cohortId, merkleRoot, {
@@ -85,14 +85,14 @@ const updateMerkleRoot = async (cohortId, merkleRoot, gasPrice) => {
 };
 
 /**
- * @param string cohort_id
+ * Creates a new cohort on the contract with an initial merkle root
+ * @param string cohortId
  * @param number limit
  * @param string gasPrice
- * Creates a new cohort on the contract with an initial merkle root
  */
-const createCohort = async (cohort_id, limit, gasPrice) => {
+const createCohort = async (cohortId, limit, gasPrice) => {
   const tx = await contract.createCohort(
-    cohort_id,
+    cohortId,
     limit,
     '0x0000000000000000000000000000000000000000000000000000000000000000',
     {
@@ -105,17 +105,17 @@ const createCohort = async (cohort_id, limit, gasPrice) => {
 };
 
 /**
+ * Fetches the token number of a given cohortId and address
  * @param string address
- * @param string cohort_id
- * Fetches the token number of a given cohort_id and address
+ * @param string cohortId
  */
-const fetchOwner = async (address, cohort_id) => {
-  const tx = await contract.claimed(address, cohort_id);
+const fetchOwner = async (address, cohortId) => {
+  const tx = await contract.claimed(address, cohortId);
   console.log(tx.toNumber());
 };
 
 // Execution Land
-createCohort('CHaee9050e-fdb6-4094-9097-7f4fa00b8fd6', 1000, '100')
+createCohort('YOUR_COHORT_ID', 1000, '100')
   .then(() => process.exit(0))
   .catch((error) => {
     console.error(error);
